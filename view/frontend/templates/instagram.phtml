@@ -1,0 +1,110 @@
+<?php
+/**
+ * MageINIC
+ * Copyright (C) 2023 MageINIC <support@mageinic.com>
+ *
+ * NOTICE OF LICENSE
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see https://opensource.org/licenses/gpl-3.0.html.
+ *
+ * Do not edit or add to this file if you wish to upgrade this extension to newer
+ * version in the future.
+ *
+ * @category MageINIC
+ * @package Hyva_MageINICInstagramFeed
+ * @copyright Copyright (c) 2023 MageINIC (https://www.mageinic.com/)
+ * @license https://opensource.org/licenses/gpl-3.0.html GNU General Public License,version 3 (GPL-3.0)
+ * @author MageINIC <support@mageinic.com>
+ */
+
+/**
+ * @var MageINIC\InstagramFeed\Block\Widget $block
+ */
+
+if ($block->isEnable()):
+    $widgetId = uniqid('-', false);
+    $options = $block->getAllOptions();
+    $total = $options['total_number'];
+    $calcWidth = $block->calcWidth();
+    $width = $block->getNumberRow($options['layout']) ? $calcWidth . '%' : $calcWidth . 'px';
+    $sizeIcon = ($calcWidth < 10) ? '10px' : '14px';
+    ?>
+    <div x-data="initInstaGramFeed()" x-init="initialize()">
+        <div x-cloak>
+            <div class="instagramfeed-header">
+                <h3><?= /** @noEscape */
+                    __($block->getData('title')) ?></h3>
+                <div><?= /** @noEscape */
+                    __($block->getData('description')) ?></div>
+            </div>
+            <div class="grid grid-cols-5 gap-4">
+                <template x-for="(value, key) in Items" :key="key">
+
+                    <div class="relative group z-auto">
+                        <?php if ($options['show_caption'] === '1'): ?>
+                            <p x-html="value.caption" class="line-clamp-3 text-xs absolute bottom-[10px] px-4 text-black font-bold opacity-0 group-hover:opacity-100"></p>
+                        <?php endif; ?>
+                        <div class="w-full h-full overflow-hidden">
+                            <a <?php if ($options['show_popup'] === '1'): ?> @click.prevent="openModal(key)" <?php endif; ?>>
+                                <img :src="value.media_url" class="w-full h-full object-cover">
+                            </a>
+                        </div>
+                        <template x-if="value.showModal" x-if ="value.show_popup">
+                            <div x-cloak>
+                                <div class="fixed inset-0 flex items-center justify-center z-10">
+                                    <div class="fixed inset-0 transition-opacity" aria-hidden="true" @click="closeModal(key)">
+                                        <div class="absolute inset-0 bg-black opacity-75"></div>
+                                    </div>
+                                    <div class="relative bg-white p-8 rounded-lg shadow-xl">
+                                        <img :src="value.media_url">
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                    </div>
+                </template>
+            </div>
+            <div id="instagramfeed-photos-<?= /** @noEscape */
+            $widgetId ?>" class="row shuffle"></div>
+        </div>
+    </div>
+    <script>
+        function initInstaGramFeed() {
+            return {
+                showModal: false,
+                id: "<?= $widgetId ?>",
+                count: "<?= $total ?>",
+                layout: "<?= $options['layout'] ?>",
+                showCaption: "<?= $options['show_caption'] ?>",
+                showPopup: "<?= $options['show_popup'] ?>",
+                Items: [],
+                initialize() {
+                    const postUrl = BASE_URL + 'instagram/feed/get';
+                    fetch(postUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.Items = data.data
+                        })
+                        .catch(error => {
+                            console.error('Error fetching data:', error);
+                        });
+                },
+                openModal(index) {
+                    this.Items[index].showModal = true;
+                    document.body.style.overflow = 'hidden';
+                },
+                closeModal(index) {
+                    this.Items[index].showModal = false;
+                    document.body.style.overflow = '';
+                },
+            }
+        }
+    </script>
+<?php endif; ?>
